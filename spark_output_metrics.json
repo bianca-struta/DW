@@ -1,8 +1,8 @@
 {
   "spark_pipeline_status": "PROCESSED_SUCCESSFULLY",
-  "total_records_analyzed": 2,
+  "total_records_analyzed": 3,
   "computed_averages": {
-    "historical_moving_average": 53168.9
+    "historical_moving_average": 21824.333333333332
   },
   "ml_model_metadata": {
     "intercept": 2.54,
@@ -11,6 +11,6 @@
       0.45,
       0.42
     ],
-    "next_day_forecast_evaluation": 53966.43
+    "next_day_forecast_evaluation": 22151.7
   }
 }
