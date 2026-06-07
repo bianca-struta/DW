@@ -2,33 +2,36 @@ import json
 from fastapi import FastAPI, HTTPException
 
 app = FastAPI(
-    title="Acme LtdL: Financial Markets Enterprise Data Warehouse",
+    title="Acme Lt. : Financial Markets Enterprise Data Warehouse",
     description="Live data platform for collecting, storing, and analyzing heterogeneous and temporal financial data.",
-    version="3.0.0",
+    version="3.1.0",
     openapi_tags=[
         {"name": "Data Warehouse REST API", "description": "Production-grade discovery and temporal query endpoints"}
     ]
 )
 
-def read_warehouse_storage():
-    """Isolated Data Access Layer (DAL) acting as our NoSQL backend bridge."""
-    try:
-        with open('acme_dwh_nosql.json', 'r') as file:
-            return json.load(file)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"financial_assets": [], "market_time_series": []}
+class LocalNoSQLRepository:
+    def __init__(self, storage_path: str = "acme_dwh_nosql.json"):
+        self.storage_path = storage_path
 
-# --- REST API LAYER (With fully integrated Pagination, Filtering & Uniform camelCase shapes) ---
+    def read_all_records(self) -> dict:
+        """Isolated structural table space storage read loop."""
+        try:
+            with open(self.storage_path, 'r') as file:
+                return json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {"financial_assets": [], "market_time_series": []}
+
+db_repository = LocalNoSQLRepository()
 
 @app.get("/api/assets", tags=["Data Warehouse REST API"], summary="List Active Assets with Pagination")
 def get_active_assets(limit: int = 10, offset: int = 0):
     """Returns catalog of active assets supporting standard limit/offset pagination."""
-    db = read_warehouse_storage()
+    db = db_repository.read_all_records()
     active_assets = []
     
     for asset in db.get("financial_assets", []):
         if asset.get("valid_to") is None and not asset.get("is_deleted", False):
-            # Enforcing strict camelCase response consistency across endpoints
             active_assets.append({
                 "assetId": asset.get("asset_id"),
                 "symbol": asset.get("symbol"),
@@ -38,13 +41,12 @@ def get_active_assets(limit: int = 10, offset: int = 0):
                 "provenanceProvider": asset.get("provenance_provider")
             })
             
-    # Apply standard slice-driven pagination strategy
     return active_assets[offset : offset + limit]
 
 @app.get("/api/assets/{symbol}", tags=["Data Warehouse REST API"], summary="Inspect Asset Specification Details")
 def get_asset_specifications(symbol: str):
     """Retrieves full target model properties matching requested symbol ticker."""
-    db = read_warehouse_storage()
+    db = db_repository.read_all_records()
     for asset in db.get("financial_assets", []):
         if asset.get("symbol") == symbol.upper() and asset.get("valid_to") is None:
             if asset.get("is_deleted", False):
@@ -68,7 +70,7 @@ def get_asset_specifications(symbol: str):
 @app.get("/api/sources", tags=["Data Warehouse REST API"], summary="List Provenance Sources with Pagination")
 def get_provenance_sources(limit: int = 10, offset: int = 0):
     """Lists data ingestion provider origins logged within the NoSQL architecture."""
-    db = read_warehouse_storage()
+    db = db_repository.read_all_records()
     unique_providers = set()
     
     for asset in db.get("financial_assets", []):
@@ -82,7 +84,7 @@ def get_provenance_sources(limit: int = 10, offset: int = 0):
 @app.get("/api/sources/{source_id}", tags=["Data Warehouse REST API"], summary="Inspect Source Specification Details")
 def get_source_information(source_id: str):
     """Inspects static parameters and state of a registered ingestion source feed."""
-    db = read_warehouse_storage()
+    db = db_repository.read_all_records()
     for asset in db.get("financial_assets", []):
         if str(asset.get("provenance_provider")).lower() == source_id.lower():
             return {
@@ -95,7 +97,7 @@ def get_source_information(source_id: str):
 @app.get("/api/timeseries/{symbol}/{source_id}", tags=["Data Warehouse REST API"], summary="Fetch Historical Time-Series with Date Filtering")
 def get_historical_time_series(symbol: str, source_id: str, start_date: str = None, end_date: str = None):
     """Fetches sequence of historical price points filtered by optional chronological date boundaries."""
-    db = read_warehouse_storage()
+    db = db_repository.read_all_records()
     matched_series = []
     
     for entry in db.get("market_time_series", []):
@@ -105,7 +107,6 @@ def get_historical_time_series(symbol: str, source_id: str, start_date: str = No
         if symbol_match and source_match:
             record_date = entry.get("timestamp", "")
             
-            # Continuous data bounding filtering evaluations
             if start_date and record_date < start_date:
                 continue
             if end_date and record_date > end_date:
@@ -150,7 +151,7 @@ def get_trend_summarization(symbol: str):
 @app.get("/api/analytics/explain/{symbol}", tags=["Data Warehouse REST API"], summary="Explain System Temporal Modification Sequences")
 def explain_temporal_change(symbol: str):
     """Traces system immutability loops and version logs stored for a specific instrument."""
-    db = read_warehouse_storage()
+    db = db_repository.read_all_records()
     history_versions = []
     for asset in db.get("financial_assets", []):
         if asset.get("symbol") == symbol.upper():

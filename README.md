@@ -1,124 +1,138 @@
-**Financial Market Enterprise Data Warehouse (Acme Ltd)**
+# Financial Market Enterprise Data Warehouse (Acme Ltd)
 
-This project implements a Data Warehouse platform for **Acme Ltd**, designed to collect, store, explore, and analyze heterogeneous financial market data while preserving historical versions and data provenance.
+This project implements a Data Warehouse platform for Acme Ltd, designed to collect, store, explore, and analyze heterogeneous financial market data while preserving historical versions and data provenance.
 
+## System Architecture Diagram
 
-**Architecture Overview**
+```text
++--------------------------------------------------------------------------+
+|                       Model Context Protocol (MCP)                        |
+|                      [ mcp_server.py (LLM Tools) ]                        |
++------------------------------------+-------------------------------------+
+                                     |
+                                     | (Grounded Context)
+                                     v
++--------------------------------------------------------------------------+
+|                           Presentation Layer                             |
+|                    [ app.py (FastAPI REST Engine) ]                       |
++------------------------------------+-------------------------------------+
+                                     |
+                                     | (Repository Boundary)
+                                     v
++--------------------------------------------------------------------------+
+|                         Data Access Layer (DAL)                           |
+|              [ LocalNoSQLRepository Class Abstraction ]                   |
++---------------------+-------------------------------+---------------------+
+                      |                               |
+                      v                               v
++--------------------------------------+  +--------------------------------+
+|      Big Data & Analytics Engine     |  |          Storage Layer         |
+| [ spark_analytics.py (ML Pipeline) ] |  |     [ acme_dwh_nosql.json ]    |
++--------------------------------------+  +--------------------------------+
+```
 
-**Storage Layer**
+## Architecture Overview
 
-The platform uses a document-oriented NoSQL storage model implemented through a native JSON engine (acme_dwh_nosql.json). The design supports heterogeneous financial assets, allowing different asset classes to expose different attributes. Cryptocurrencies may contain blockchain-specific information, stocks may include exchange or market sector information, while other asset types can expose their own properties. This approach makes the system easily extensible for future financial instruments.
+### Storage Layer
+The platform uses a document-oriented NoSQL storage model implemented through a native JSON engine (`acme_dwh_nosql.json`). The design supports heterogeneous financial assets, allowing different asset classes to expose different attributes. Cryptocurrencies may contain blockchain-specific information, stocks may include exchange or market sector information, while other asset types expose their own properties. This approach makes the system easily extensible for future financial instruments.
 
-
-**Temporal Data Management**
-
+### Temporal Data Management
 The platform follows a temporal database approach based on immutable records. Existing records are never overwritten, updates generate new versions of the same entity, and historical states remain available. Logical deletion is represented through marker records with validity timestamps. This approach enables historical reconstruction and guarantees data consistency over time.
 
+### Data Ingestion and Provenance
+The origin of each dataset is tracked through dedicated metadata fields such as `provenance_provider` and `data_source_id`. Supported providers include Nasdaq and Bloomberg. Provenance information allows complete traceability of imported financial records.
 
-**Data Ingestion and Provenance**
+## Project Structure
 
-The origin of each dataset is tracked through dedicated metadata fields such as provenance_provider and data_source_id. Supported providers include Nasdaq and Bloomberg. Provenance information allows complete traceability of imported financial records.
-
-
-**Project Structure**
-
-**db_ingest.py**
+### db_ingest.py
 Populates the database with financial instruments, providers, and historical time-series records.
 
-**app.py**
-Implements the FastAPI server and exposes REST endpoints for data exploration and analytics.
+### app.py
+Implements the FastAPI server while abstracting database operations under a formal Data Access Layer (DAL) repository pattern.
 
-**spark_analytics.py**
-Runs data aggregation and analytical workloads, including minimum price, maximum price, average price, moving averages, trend detection, and simple next-day forecasts.
+### spark_analytics.py
+Runs automated data aggregations and analytical workloads using Apache Spark DataFrames and simple machine learning forecasting models.
 
-**mcp_server.py**
-Implements the Model Context Protocol (MCP) layer used by the LLM assistant to access the platform capabilities as tools.
+### test_warehouse.py
+Contains isolated unit tests validating parser components and temporal data integrity rules.
 
+### mcp_server.py
+Implements the Model Context Protocol layer used by the LLM assistant to access platform capabilities as tools.
 
-**REST API**
+## REST API Specification
 
-**Asset Discovery**
+### Asset Discovery
+* `GET /api/assets` – Returns all active financial assets stored in the warehouse. Supports `limit` and `offset` pagination parameters.
+* `GET /api/assets/{symbol}` – Returns complete metadata for a specific asset using consistent schemas.
 
-GET /api/assets : Returns all active financial assets stored in the warehouse.
+### Provider Discovery
+* `GET /api/sources` – Lists available financial data providers with pagination support.
+* `GET /api/sources/{source_id}` – Returns information about a specific provider.
 
-GET /api/assets/{symbol} : Returns complete metadata for a specific asset.
+### Time-Series Data
+* `GET /api/timeseries/{symbol}/{source_id}` – Returns historical market data and supports optional `start_date` and `end_date` filters.
 
+## Analytics Endpoints
+* `GET /api/analytics/compare` – Performs side-by-side comparisons between heterogeneous financial instruments.
+* `GET /api/analytics/trends/{symbol}` – Computes minimum values, maximum values, averages, moving averages, trend indicators, and predictive estimates generated from the Spark pipeline.
+* `GET /api/analytics/explain/{symbol}` – Explains temporal changes, version history, and tracking information recorded for an asset.
 
-**Provider Discovery**
-
-GET /api/sources : Lists available financial data providers.
-
-GET /api/sources/{source_id} : Returns information about a particular provider.
-
-
-**Time-Series Data**
-
-GET /api/timeseries/{symbol}/{source_id} : Returns historical market data for the selected asset and provider.
-
-
-**Analytics Endpoints**
-
-GET /api/analytics/compare : Performs side-by-side comparison between two assets, such as BTC versus ETH or TSLA versus MSFT.
-
-GET /api/analytics/trends/{symbol} : Computes minimum price, maximum price, average price, moving averages, trend indicators, and simple forecast values.
-
-GET /api/analytics/explain/{symbol} : Explains temporal changes and historical versions recorded for a given asset.
-
-
-**LLM Assistant via MCP**
-
+## LLM Assistant via MCP
 The platform exposes its capabilities through MCP tools that can be consumed by an LLM assistant. Supported operations include listing assets, retrieving time-series data, summarizing trends, comparing assets, and explaining historical changes. All answers are grounded in platform data rather than generic financial knowledge.
 
+## Installation
+Install the required dependencies:
 
-**Installation**
+```bash
+pip install fastapi uvicorn pydantic pyspark numpy pytest
+```
 
-Install the required dependencies using the following command:
+## Running the Project
 
-pip install fastapi uvicorn pydantic
-
-
-**Running the Project**
-
-**1. Populate the database**
-
+### 1. Populate the Database
 Run the ingestion script to seed the data warehouse:
 
+```bash
 py db_ingest.py
+```
 
+### 2. Execute Unit Tests
+Validate parser components and temporal constraints:
 
-**2. Start the REST API server**
+```bash
+py -m pytest test_warehouse.py
+```
 
-Launch the FastAPI application server locally:
+### 3. Execute Analytics Pipelines
+Run Apache Spark analytical workloads and forecasting procedures:
 
-py -m uvicorn app:app --reload
-
-Interactive API documentation is available at the local address: http://127.0.0.1:8000/docs
-
-
-**3. Execute analytics workloads**
-
-Run the independent analytical simulation calculations:
-
+```bash
 py spark_analytics.py
+```
 
+### 4. Start the REST API Server
+Launch the FastAPI application:
 
-**4. Run the MCP assistant layer**
+```bash
+py -m uvicorn app:app --reload
+```
 
-Start the model context protocol layer tool routing:
+### 5. Run the MCP Assistant Layer
+Start the Model Context Protocol server:
 
+```bash
 py mcp_server.py
+```
 
-
-**Main Features**
-
+## Main Platform Features
 * NoSQL data warehouse architecture
-* Heterogeneous asset model
-* Historical time-series storage
-* Temporal database support
-* Immutable records
+* Structured heterogeneous asset schemas
+* Data Access Layer repository abstraction
+* Temporal database versioning support
+* Immutable close-and-append update strategy
 * Data provenance tracking
-* REST API for data exploration
-* Analytics and trend analysis
-* Asset comparison capabilities
-* LLM integration through MCP
-* Extensible architecture suitable for future development
+* Pagination and range-filtering support
+* Apache Spark analytical processing
+* Machine learning forecasting workflows
+* Grounded LLM integration through Model Context Protocol
+* Modular architecture suitable for future extensions
