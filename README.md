@@ -4,6 +4,10 @@ This project implements a Data Warehouse platform for Acme Ltd, designed to coll
 
 ## System Architecture Diagram
 
+**Project Demo Video**
+
+[Demo video: ](https://drive.google.com/file/d/1TI9JnjFRd8i3Ig05C-jBrSrx1ZzBZFvx/view?usp=sharing)
+
 ```text
 +--------------------------------------------------------------------------+
 |                       Model Context Protocol (MCP)                        |
