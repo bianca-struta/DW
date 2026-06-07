@@ -1,97 +1,87 @@
 import datetime
-import json
-import os
-
-# quick check if file exists, if not make it empty list
-if not os.path.exists('acme_dwh_nosql.json'):
-    with open('acme_dwh_nosql.json', 'w') as f:
-        json.dump({"financial_assets": [], "market_time_series": []}, f)
+from app import db_repository
 
 def load_db():
-    with open('acme_dwh_nosql.json', 'r') as f:
-        return json.load(f)
+    return db_repository.read_all_records()
 
 def save_db(data):
-    with open('acme_dwh_nosql.json', 'w') as f:
-        json.dump(data, f, indent=2)
+    db_repository.write_all_records(data)
 
 def ingest_or_update_asset(symbol, asset_class, description, region, provider, extra_attrs=None):
-    if extra_attrs is None:
-        extra_attrs = {}
+    db = load_db()
+    current_time = datetime.datetime.now().isoformat()
+    symbol = symbol.upper()
     
-    db_data = load_db()
-    assets = db_data["financial_assets"]
-    now = datetime.datetime.utcnow().isoformat()
-    
-    # temporal logic: close old version if symbol matches
-    for item in assets:
-        if item.get("symbol") == symbol.upper() and item.get("valid_to") is None:
-            item["valid_to"] = now
-            
-    # build the new record
-    new_rec = {
-        "asset_id": "asset_" + str(len(assets) + 1),
-        "symbol": symbol.upper(),
-        "asset_class": asset_class,
+    # Check if active asset version exists to close it out temporally
+    for asset in db["financial_assets"]:
+        if asset["symbol"] == symbol and asset["valid_to"] is None:
+            asset["valid_to"] = current_time
+
+    new_asset = {
+        "asset_id": f"asset_{len(db['financial_assets']) + 1}",
+        "symbol": symbol,
+        "asset_class": asset_class.lower(),
         "description": description,
         "region": region,
         "provenance_provider": provider,
-        "valid_from": now,
+        "valid_from": current_time,
         "valid_to": None,
         "is_deleted": False
     }
+
+    if extra_attrs:
+        new_asset.update(extra_attrs)
+
+    db["financial_assets"].append(new_asset)
+    save_db(db)
+    print(f"[Ingestion Layer] Successfully stored asset configuration for: {symbol}")
+
+def ingest_time_series_point(symbol, provider, metrics_dict):
+    db = load_db()
+    current_time = datetime.datetime.now().isoformat()
     
-    # merge extra fields for heterogeneity
-    for k, v in extra_attrs.items():
-        new_rec[k] = v
-        
-    assets.append(new_rec)
-    db_data["financial_assets"] = assets
-    save_db(db_data)
+    new_point = {
+        "time_series_id": f"ts_{len(db['market_time_series']) + 1}",
+        "symbol": symbol.upper(),
+        "data_source_id": provider,
+        "timestamp": current_time,
+        "metrics": metrics_dict
+    }
+    
+    db["market_time_series"].append(new_point)
+    save_db(db)
+    print(f"[Ingestion Layer] Logged historical time-series metric entry for: {symbol.upper()}")
 
 def delete_asset_temporal(symbol):
-    db_data = load_db()
-    assets = db_data["financial_assets"]
-    now = datetime.datetime.utcnow().isoformat()
+    db = load_db()
+    current_time = datetime.datetime.now().isoformat()
+    symbol = symbol.upper()
     
-    for item in assets:
-        if item.get("symbol") == symbol.upper() and item.get("valid_to") is None:
-            item["valid_to"] = now
+    # Close current active track timeline
+    for asset in db["financial_assets"]:
+        if asset["symbol"] == symbol and asset["valid_to"] is None:
+            asset["valid_to"] = current_time
             
-    marker = {
-        "symbol": symbol.upper(),
-        "valid_from": now,
-        "valid_to": None,
-        "is_deleted": True
-    }
-    assets.append(marker)
-    db_data["financial_assets"] = assets
-    save_db(db_data)
-
-def ingest_time_series_point(symbol, source_id, timestamp, metrics):
-    db_data = load_db()
-    ts = db_data["market_time_series"]
-    
-    new_pt = {
-        "symbol": symbol.upper(),
-        "data_source_id": source_id,
-        "timestamp": timestamp,
-        "metrics": metrics
-    }
-    ts.append(new_pt)
-    db_data["market_time_series"] = ts
-    save_db(db_data)
+            deleted_marker = asset.copy()
+            deleted_marker["asset_id"] = f"asset_{len(db['financial_assets']) + 1}"
+            deleted_marker["valid_from"] = current_time
+            deleted_marker["valid_to"] = None
+            deleted_marker["is_deleted"] = True
+            
+            db["financial_assets"].append(deleted_marker)
+            save_db(db)
+            print(f"[Temporal Layer] Registered soft-deletion state for target asset: {symbol}")
+            return
+            
+    print(f"[Warning] Asset {symbol} not active. Mutation skipped.")
 
 if __name__ == "__main__":
-    # reset db for fresh start
-    init_data = {"financial_assets": [], "market_time_series": []}
-    save_db(init_data)
-    
-    print("populating database with fake data...")
+    # Seed financial dataset configuration baseline
     ingest_or_update_asset("BTC", "crypto", "Bitcoin", "Global", "CoinGecko", {"circulating_supply": 19600000})
     ingest_or_update_asset("TSLA", "stock", "Tesla Inc", "US", "Nasdaq", {"market_cap": 950000000000})
-    ingest_or_update_asset("NFLX", "stock", "Netflix Inc", "US", "Bloomberg", {"pe_ratio": 35.4})
+    ingest_or_update_asset("NFLX", "stock", "Netflix Inc", "US", "Bloomberg", {"pe_ratio": 42.5})
     
-    ingest_time_series_point("BTC", "CoinGecko", "2026-06-07T00:00:00", {"open": 105000, "high": 106500, "low": 104000, "close": 106000})
-    ingest_time_series_point("TSLA", "Nasdaq", "2026-06-07T00:00:00", {"open": 335.0, "high": 339.0, "low": 334.0, "close": 337.80})
-    print("done ingest.")
+    # Seed historical price feeds compliance sequences
+    ingest_time_series_point("BTC", "CoinGecko", {"open": 64000.0, "high": 65000.0, "low": 63500.0, "close": 64800.0})
+    ingest_time_series_point("TSLA", "Nasdaq", {"open": 330.0, "high": 345.0, "low": 328.0, "close": 343.0})
+    ingest_time_series_point("TSLA", "Nasdaq", {"open": 340.0, "high": 342.0, "low": 325.0, "close": 330.0})

@@ -2,9 +2,9 @@ import json
 from fastapi import FastAPI, HTTPException
 
 app = FastAPI(
-    title="Acme Lt. : Financial Markets Enterprise Data Warehouse",
+    title="Acme Ltd. : Financial Markets Enterprise Data Warehouse",
     description="Live data platform for collecting, storing, and analyzing heterogeneous and temporal financial data.",
-    version="3.1.0",
+    version="3.3.0",
     openapi_tags=[
         {"name": "Data Warehouse REST API", "description": "Production-grade discovery and temporal query endpoints"}
     ]
@@ -21,6 +21,11 @@ class LocalNoSQLRepository:
                 return json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
             return {"financial_assets": [], "market_time_series": []}
+
+    def write_all_records(self, data: dict) -> None:
+        """Isolated structural table space storage write loop to enforce clean DAL boundaries."""
+        with open(self.storage_path, 'w') as file:
+            json.dump(data, file, indent=2)
 
 db_repository = LocalNoSQLRepository()
 

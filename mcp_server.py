@@ -3,7 +3,6 @@ from app import get_active_assets, get_historical_time_series, get_asset_compari
 
 class ModelContextProtocolServer:
     def __init__(self):
-        # register available tools for the assistant mapping the backend functions
         self.registered_tools = {
             "list_assets": "Retrieves active financial assets logged in the warehouse.",
             "fetch_time_series": "Retrieves historical time series points for an asset.",
@@ -36,7 +35,7 @@ class ModelContextProtocolServer:
             return {"status": "error", "message": f"Tool '{tool_name}' not recognized."}
 
     def run_automated_portfolio_analysis(self, symbol):
-        """Helper process to execute a multi-step verification pipeline for a specific asset."""
+        """Helper process executing a multi-step verification pipeline for an asset."""
         print(f"\n Starting multi-step analysis sequence for: {symbol} ")
         
         print("Step 1: Validating if asset is active")
@@ -49,30 +48,23 @@ class ModelContextProtocolServer:
         print("Step 3: Calculating statistical averages and trend thresholds")
         trends = get_trend_summarization(symbol)
         
-        print("Step 4: Consolidating final output format")
+        print("Step 4: Consolidating final output format...")
         return {
             "status": "COMPLETED",
             "pipeline_steps": ["check_active_catalog", "fetch_time_series_logs", "compute_metrics"],
             "analysis_summary": {
                 "asset_target": symbol,
-                "moving_average": trends["aggregations"]["midpoint_moving_average"],
-                "next_day_estimate": trends["predictive_signals"]["next_day_forecast"]
+                "moving_average": trends["movingAverageFloor"],
+                "next_day_estimate": trends["predictiveMlModelForecast"]
             }
         }
 
 if __name__ == "__main__":
     mcp_instance = ModelContextProtocolServer()
     
-    # testing execution flows 
-    print("Testing Tool: compare_two_assets")
+    print(" Testing Tool: compare_two_assets ")
     res1 = mcp_instance.execute_llm_tool_call("compare_two_assets", {"symbol1": "BTC", "symbol2": "TSLA"})
-    print("Response:", res1)
     
-    print("\n Testing Tool: explain_a_change")
-    res2 = mcp_instance.execute_llm_tool_call("explain_a_change", {"symbol": "TSLA"})
-    print("Response:", res2)
-    
-    # testing the integrated custom analytical flow
     pipeline_report = mcp_instance.run_automated_portfolio_analysis("TSLA")
     print("\nFinal Pipeline Report JSON:")
     print(json.dumps(pipeline_report, indent=2))

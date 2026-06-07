@@ -8,7 +8,7 @@
       "region": "Global",
       "provenance_provider": "CoinGecko",
       "valid_from": "2026-06-07T12:15:56.929252",
-      "valid_to": null,
+      "valid_to": "2026-06-07T22:45:04.651891",
       "is_deleted": false,
       "circulating_supply": 19600000
     },
@@ -20,7 +20,7 @@
       "region": "US",
       "provenance_provider": "Nasdaq",
       "valid_from": "2026-06-07T12:15:56.929957",
-      "valid_to": null,
+      "valid_to": "2026-06-07T22:45:04.653270",
       "is_deleted": false,
       "market_cap": 950000000000
     },
@@ -32,9 +32,45 @@
       "region": "US",
       "provenance_provider": "Bloomberg",
       "valid_from": "2026-06-07T12:15:56.930879",
-      "valid_to": null,
+      "valid_to": "2026-06-07T22:45:04.654576",
       "is_deleted": false,
       "pe_ratio": 35.4
+    },
+    {
+      "asset_id": "asset_4",
+      "symbol": "BTC",
+      "asset_class": "crypto",
+      "description": "Bitcoin",
+      "region": "Global",
+      "provenance_provider": "CoinGecko",
+      "valid_from": "2026-06-07T22:45:04.651891",
+      "valid_to": null,
+      "is_deleted": false,
+      "circulating_supply": 19600000
+    },
+    {
+      "asset_id": "asset_5",
+      "symbol": "TSLA",
+      "asset_class": "stock",
+      "description": "Tesla Inc",
+      "region": "US",
+      "provenance_provider": "Nasdaq",
+      "valid_from": "2026-06-07T22:45:04.653270",
+      "valid_to": null,
+      "is_deleted": false,
+      "market_cap": 950000000000
+    },
+    {
+      "asset_id": "asset_6",
+      "symbol": "NFLX",
+      "asset_class": "stock",
+      "description": "Netflix Inc",
+      "region": "US",
+      "provenance_provider": "Bloomberg",
+      "valid_from": "2026-06-07T22:45:04.654576",
+      "valid_to": null,
+      "is_deleted": false,
+      "pe_ratio": 42.5
     }
   ],
   "market_time_series": [
@@ -58,6 +94,42 @@
         "high": 339.0,
         "low": 334.0,
         "close": 337.8
+      }
+    },
+    {
+      "time_series_id": "ts_3",
+      "symbol": "BTC",
+      "data_source_id": "CoinGecko",
+      "timestamp": "2026-06-07T22:45:04.655918",
+      "metrics": {
+        "open": 64000.0,
+        "high": 65000.0,
+        "low": 63500.0,
+        "close": 64800.0
+      }
+    },
+    {
+      "time_series_id": "ts_4",
+      "symbol": "TSLA",
+      "data_source_id": "Nasdaq",
+      "timestamp": "2026-06-07T22:45:04.657385",
+      "metrics": {
+        "open": 330.0,
+        "high": 345.0,
+        "low": 328.0,
+        "close": 343.0
+      }
+    },
+    {
+      "time_series_id": "ts_5",
+      "symbol": "TSLA",
+      "data_source_id": "Nasdaq",
+      "timestamp": "2026-06-07T22:45:04.658771",
+      "metrics": {
+        "open": 340.0,
+        "high": 342.0,
+        "low": 325.0,
+        "close": 330.0
       }
     }
   ]
