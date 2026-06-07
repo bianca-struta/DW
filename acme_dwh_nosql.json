@@ -1,0 +1,64 @@
+{
+  "financial_assets": [
+    {
+      "asset_id": "asset_1",
+      "symbol": "BTC",
+      "asset_class": "crypto",
+      "description": "Bitcoin",
+      "region": "Global",
+      "provenance_provider": "CoinGecko",
+      "valid_from": "2026-06-07T12:15:56.929252",
+      "valid_to": null,
+      "is_deleted": false,
+      "circulating_supply": 19600000
+    },
+    {
+      "asset_id": "asset_2",
+      "symbol": "TSLA",
+      "asset_class": "stock",
+      "description": "Tesla Inc",
+      "region": "US",
+      "provenance_provider": "Nasdaq",
+      "valid_from": "2026-06-07T12:15:56.929957",
+      "valid_to": null,
+      "is_deleted": false,
+      "market_cap": 950000000000
+    },
+    {
+      "asset_id": "asset_3",
+      "symbol": "NFLX",
+      "asset_class": "stock",
+      "description": "Netflix Inc",
+      "region": "US",
+      "provenance_provider": "Bloomberg",
+      "valid_from": "2026-06-07T12:15:56.930879",
+      "valid_to": null,
+      "is_deleted": false,
+      "pe_ratio": 35.4
+    }
+  ],
+  "market_time_series": [
+    {
+      "symbol": "BTC",
+      "data_source_id": "CoinGecko",
+      "timestamp": "2026-06-07T00:00:00",
+      "metrics": {
+        "open": 105000,
+        "high": 106500,
+        "low": 104000,
+        "close": 106000
+      }
+    },
+    {
+      "symbol": "TSLA",
+      "data_source_id": "Nasdaq",
+      "timestamp": "2026-06-07T00:00:00",
+      "metrics": {
+        "open": 335.0,
+        "high": 339.0,
+        "low": 334.0,
+        "close": 337.8
+      }
+    }
+  ]
+}
